@@ -1,0 +1,82 @@
+---
+title: "`r params$report_title`"
+author: "`r params$analyst`"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+  pdf_document:
+    toc: true
+    toc_depth: 2
+params:
+  report_title: "Haliotis Data Analysis"
+  analyst: "Analyst"
+  data: NULL
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(ggplot2)
+```
+
+# Executive summary
+
+This report summarises an exploratory analysis of `r nrow(params$data)` Haliotis observations using morphometric, weight and ring-count measurements.
+
+# Dataset description
+
+```{r}
+dimensions <- dim(params$data)
+cat("Dimensions:", dimensions[1], "rows ×", dimensions[2], "columns")
+```
+
+```{r}
+summary_table <- params$data |>
+  select(where(is.numeric)) |>
+  summarise(across(
+    everything(),
+    list(
+      Mean = ~ mean(.x, na.rm = TRUE),
+      SD = ~ sd(.x, na.rm = TRUE),
+      Min = ~ min(.x, na.rm = TRUE),
+      Max = ~ max(.x, na.rm = TRUE)
+    )
+  ))
+knitr::kable(round(summary_table, 3))
+```
+
+# Exploratory analysis
+
+## Rings by sex
+
+```{r}
+ggplot(params$data, aes(x = Sex, y = Rings, fill = Sex)) +
+  geom_boxplot(alpha = 0.7) +
+  geom_jitter(width = 0.2, alpha = 0.3) +
+  theme_minimal() +
+  labs(x = "Sex", y = "Rings", title = "Distribution of rings by sex")
+```
+
+## Length and whole weight
+
+```{r}
+ggplot(params$data, aes(x = Length, y = Whole.weight, color = Age)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE) +
+  theme_minimal() +
+  labs(title = "Length vs whole weight", x = "Length", y = "Whole weight")
+```
+
+## Correlation matrix
+
+```{r}
+numeric_data <- params$data |> select(where(is.numeric))
+cor_matrix <- cor(numeric_data, use = "complete.obs")
+knitr::kable(round(cor_matrix, 3))
+```
+
+# Conclusions
+
+The application provides an interactive framework for exploratory biological data analysis, including descriptive statistics, group comparisons, correlation analysis and multivariate exploration. Interpretation should be adapted to the provenance and experimental design of the input dataset.
